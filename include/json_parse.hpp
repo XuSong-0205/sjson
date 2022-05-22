@@ -1,17 +1,13 @@
-#ifndef JSON_PARSE_H
-#define JSON_PARSE_H
+#ifndef JSON_PARSE_HPP
+#define JSON_PARSE_HPP
 
 #include "json_utils.hpp"
 
-JSON_BEGIN
+namespace sjson
+{
 
 
+    
+}
 
-
-
-
-
-
-JSON_END
-
-#endif  // JSON_PARSE_H
+#endif  // JSON_PARSE_HPP

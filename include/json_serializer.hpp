@@ -1,17 +1,13 @@
-#ifndef JSON_SERIALIZER_H
-#define JSON_SERIALIZER_H
+#ifndef JSON_SERIALIZER_HPP
+#define JSON_SERIALIZER_HPP
 
 #include "json_utils.hpp"
 
-JSON_BEGIN
+namespace sjson
+{
 
 
+    
+}
 
-
-
-
-
-
-JSON_END
-
-#endif  // JSON_SERIALIZER_H
+#endif  // JSON_SERIALIZER_HPP

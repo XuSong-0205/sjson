@@ -1,5 +1,5 @@
-#ifndef JSON_H
-#define JSON_H
+#ifndef JSON_HPP
+#define JSON_HPP
 
 #include "json_utils.hpp"
 #include "json_basic.hpp"
@@ -10,15 +10,16 @@
 #include "json_value.hpp"
 
 
-JSON_BEGIN
+namespace sjson
+{
+
+using json = basic_json<>;
+    
+
+    
+
+    
+}
 
 
-
-
-
-
-
-
-JSON_END
-
-#endif  // JSON_H
+#endif  // JSON_HPP

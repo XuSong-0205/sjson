@@ -1,17 +1,19 @@
-#ifndef JSON_BASIC_H
-#define JSON_BASIC_H
+#ifndef JSON_BASIC_HPP
+#define JSON_BASIC_HPP
 
 #include "json_utils.hpp"
 
-JSON_BEGIN
+namespace sjson
+{
+
+template<class... Args>
+class basic_json;
 
 
 
 
 
 
+}
 
-
-JSON_END
-
-#endif  // JSON_BASIC_H
+#endif  // JSON_BASIC_HPP

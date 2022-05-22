@@ -1,17 +1,13 @@
-#ifndef JSON_EXCEPTION_H
-#define JSON_EXCEPTION_H
+#ifndef JSON_EXCEPTION_HPP
+#define JSON_EXCEPTION_HPP
 
 #include "json_utils.hpp"
 
-JSON_BEGIN
+namespace sjson
+{
 
 
+    
+}
 
-
-
-
-
-
-JSON_END
-
-#endif  // JSON_EXCEPTION_H
+#endif  // JSON_EXCEPTION_HPP

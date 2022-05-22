@@ -1,24 +1,11 @@
-#ifndef JSON_UTILS_H
-#define JSON_UTILS_H
+#ifndef JSON_UTILS_HPP
+#define JSON_UTILS_HPP
 
-#ifndef _JSON_NAMESPACE_
-    #define _JSON_NAMESPACE_
-
-    #define JSON_BEGIN  namespace sjson {
-    #define JSON_END    }
-    #define JSON        ::sjon
-#endif  // _JSON_NAMESPACE_
+namespace sjson
+{
 
 
-JSON_BEGIN
+    
+}
 
-
-
-
-
-
-
-
-JSON_END
-
-#endif  // JSON_UTILS_H
+#endif  // JSON_UTILS_HPP

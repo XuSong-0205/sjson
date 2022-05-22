@@ -1,17 +1,13 @@
-#ifndef JSON_ITERATOR_H
-#define JSON_ITERATOR_H
+#ifndef JSON_ITERATOR_HPP
+#define JSON_ITERATOR_HPP
 
 #include "json_utils.hpp"
 
-JSON_BEGIN
+namespace sjson
+{
 
 
+    
+}
 
-
-
-
-
-
-JSON_END
-
-#endif  // JSON_ITERATOR_H
+#endif  // JSON_ITERATOR_HPP
