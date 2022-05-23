@@ -162,7 +162,7 @@ public:
     {
         if (is_null())
         {
-            m_value = json_value(value_t::array);
+            m_value = json_value<basic_json>(value_t::array);
         }
 
         if (!is_array())

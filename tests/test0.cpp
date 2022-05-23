@@ -4,11 +4,12 @@ using json = sjson::json;
 
 int main()
 {
-    json j = {
-        {"test", 233},
-        {"hello", "world"},
-        {"obj", {
-            "000", 123
+    json obj = {
+        {
+            "user", {
+                { "id", 10 },
+                { "name", "sjson" },
+                { "version", "0.1.0" }
             }
         }
     };
