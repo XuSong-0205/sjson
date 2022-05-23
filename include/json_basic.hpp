@@ -249,9 +249,6 @@ public:
             case value_t::array:
                 return m_value.m_data.array->size();
 
-            case value_t::string:
-                return m_value.m_data.string->size();
-
             default:
                 return 1;
         }
