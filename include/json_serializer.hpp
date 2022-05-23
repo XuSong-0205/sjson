@@ -1,13 +1,19 @@
 #ifndef JSON_SERIALIZER_HPP
 #define JSON_SERIALIZER_HPP
 
-#include "json_utils.hpp"
 
 namespace sjson
 {
 
+template<typename T, typename SFINAE = void>
+class json_serializer
+{
 
-    
+};
+
+
+
 }
 
-#endif  // JSON_SERIALIZER_HPP
+
+#endif // JSON_SERIALIZER_HPP
