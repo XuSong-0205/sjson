@@ -16,6 +16,10 @@ BASIC_JSON_TEMPLATE_DECLARATION
 class basic_json
 {
 public:
+    friend struct json_serializer<basic_json>;
+
+    
+public:
     using value_type        = basic_json;
     using reference         = value_type&;
     using const_reference   = const value_type&;
@@ -175,7 +179,7 @@ public:
     {
         if (is_null())
         {
-            m_value = json_value(value_t::array);
+            m_value = json_value<basic_json>(value_t::array);
         }
 
         if (!is_array())
@@ -256,11 +260,11 @@ public:
     friend std::basic_ostream<char_type>& operator<<(std::basic_ostream<char_type>& os, const basic_json& json)
     {
         const bool pretty_print = (os.width() > 0);
-        const auto indentation = (pretty_print ? out.width() : 0);
-        out.width(0);
+        const auto indent_step = (pretty_print ? os.width() : 0);
+        os.width(0);
 
         output_stream_adapter<char_type> stream_adapter(os);
-        json_serializer<basic_json>(stream_adapter, out.fill()).dump(json, pretty_print, static_cast<unsigned int>(indentation));
+        json_serializer<basic_json>(stream_adapter, os.fill()).dump(json, pretty_print, static_cast<unsigned int>(indent_step));
         return os;
     }
 

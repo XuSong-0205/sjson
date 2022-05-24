@@ -29,6 +29,7 @@ class json_value
 {
 private:
     friend BasicJsonType;
+    // friend struct json_serializer<BasicJsonType>;
 
 public:
     using char_type         = typename BasicJsonType::char_type;
@@ -385,7 +386,7 @@ public:
     }
 
 
-private:
+// private:
     value_t   m_type;
     union
     {

@@ -1,5 +1,6 @@
 #include <iostream>
 #include <cassert>
+#include <iomanip>
 #include "../include/json.hpp"
 using json = sjson::json;
 
@@ -16,7 +17,7 @@ int main()
         }
     };
 
-    std::cout << obj << "\n";
+    std::cout << std::setw(4) << obj << "\n";
 
 
     using ObjectType = std::map<std::string, json>;
@@ -49,6 +50,7 @@ int main()
     auto j10 = json::object({"test", 233});
     auto j11 = json::array({0, 1, 2, 3});
 
-
+    std::cout << "test end...\n";
+    std::cin.get();
     return 0;
 }

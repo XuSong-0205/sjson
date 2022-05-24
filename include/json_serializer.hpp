@@ -5,7 +5,7 @@
 #include <ostream>      // basic_ostream
 #include <string>       // basic_string
 #include <array>        // array
-
+#include "json_value.hpp"
 
 namespace sjson
 {
@@ -18,8 +18,8 @@ template<typename CharT>
 struct output_adapter
 {
     virtual ~output_adapter() = default;
-    virtual write(const CharT ch) = 0;
-    virtual write(const CharT* str, std::size_t len) = 0;
+    virtual void write(const CharT ch) = 0;
+    virtual void write(const CharT* str, std::size_t len) = 0;
 };
 
 
@@ -31,14 +31,14 @@ struct output_stream_adapter : public output_adapter<CharT>
     { }
 
 
-    virtual write(const CharT ch)override
+    virtual void write(const CharT ch)override
     {
         os.put(ch);
     }
 
-    virtual write(const CharT* str, std::size_t len)override
+    virtual void write(const CharT* str, std::size_t len)override
     {
-        os.wirte(str, static_cast<std::streamsize>(len));
+        os.write(str, static_cast<std::streamsize>(len));
     }
 
 private:
@@ -53,12 +53,12 @@ struct output_string_adapter : public output_adapter<CharT>
         : str(s)
     { }
 
-    virtual write(const CharT ch)
+    virtual void write(const CharT ch)
     {
         str.push_back(ch);
     }
 
-    virtual write(const CharT* str, std::size_t len)
+    virtual void write(const CharT* str, std::size_t len)
     {
         str.append(str, len);
     }
@@ -82,17 +82,176 @@ public:
     using boolean_t         = typename BasicJsonType::boolean_t;
 
 public:
-    json_serializer(output_adapter<char_type>& out_ad, const char_type indent_char)noexcept
-        : oa(out_ad), indent(indent_char), indent_string(32, indent_char)
+    json_serializer(output_adapter<char_type>& out_ad, const char_type ind_char)noexcept
+        : oa(out_ad), indent_char(ind_char), indent_string(128, ind_char)
     { }
 
-    void dump(const BasicJsonType& json, 
+    
+    void dump(const BasicJsonType& json,
               const bool pretty_print,
               const unsigned int indent_step,
               const unsigned int current_indent = 0)
     {
+        switch (json.type())
+        {
+        case value_t::null:
+        {
+            oa.write("null", 4);
+            return;
+        }
 
+        case value_t::object:
+        {
+            auto& object = *json.m_value.m_data.object;
+            if (object.empty())
+            {
+                oa.write("{}", 2);
+                return;
+            }
 
+            if (pretty_print)
+            {
+                oa.write("{\n", 2);
+
+                const auto new_indent = current_indent + indent_step;
+                if (indent_string.size() < new_indent)
+                {
+                    indent_string.resize(indent_string.size() * 2, indent_char);
+                }
+
+                auto iter = object.cbegin();
+                const auto size = object.size();
+                for (std::size_t i = 0; i < size; ++i, ++iter)
+                {
+                    oa.write(indent_string.c_str(), new_indent);
+                    oa.write('\"');
+                    oa.write(iter->first.c_str(), iter->first.size());
+                    oa.write("\": ", 3);
+                    dump(iter->second, true, indent_step, new_indent);
+
+                    // not last element
+                    if (i != size - 1)
+                        oa.write(",\n", 2);
+                }
+
+                oa.write('\n');
+                oa.write(indent_string.c_str(), current_indent);
+                oa.write('}');
+            }
+            else
+            {
+                oa.write('{');
+
+                auto iter = object.cbegin();
+                const auto size = object.size();
+                for (std::size_t i = 0; i < size; ++i, ++iter)
+                {
+                    oa.write('\"');
+                    oa.write(iter->first.c_str(), iter->first.size());
+                    oa.write("\": ", 3);
+                    dump(iter->second, false, indent_step, current_indent);
+
+                    // not last element
+                    if (i != size - 1)
+                        oa.write(',');
+                }
+
+                oa.write('}');
+            }
+
+            return;
+        }
+
+        case value_t::array:
+        {
+            auto& array = *json.m_value.m_data.array;
+            if (array.empty())
+            {
+                oa.write("[]", 2);
+                return;
+            }
+
+            if (pretty_print)
+            {
+                oa.write("[\n", 2);
+
+                const auto new_indent = current_indent + indent_step;
+                if (indent_string.size() < new_indent)
+                {
+                    indent_string.resize(indent_string.size() * 2, indent_char);
+                }
+
+                auto iter = array.cbegin();
+                const auto size = array.size();
+                for (std::size_t i = 0; i < size; ++i, ++iter)
+                {
+                    oa.write(indent_string.c_str(), new_indent);
+                    dump(*iter, true, indent_step, new_indent);
+
+                    // not last element
+                    if (i != size - 1)
+                        oa.write(",\n", 2);
+                }
+
+                oa.write('\n');
+                oa.write(indent_string.c_str(), current_indent);
+                oa.write(']');
+            }
+            else
+            {
+                oa.write('[');
+                
+                auto iter = array.cbegin();
+                const auto size = array.size();
+                for (std::size_t i = 0; i < size; ++i, ++iter)
+                {
+                    dump(*iter, false, indent_step, current_indent);
+
+                    // not last element
+                    if (i != size - 1)
+                        oa.write(',');
+                }
+
+                oa.write(']');
+            }
+            
+            return;
+        }
+
+        case value_t::string:
+        {
+            oa.write('\"');
+            dump_string(*json.m_value.m_data.string);
+            oa.write('\"');
+            return;
+        }
+
+        case value_t::number_integer:
+        {
+            dump_integer(json.m_value.m_data.number_integer);
+            return;
+        }
+
+        case value_t::number_float:
+        {
+            dump_float(json.m_value.m_data.number_float);
+            return;
+        }
+
+        case value_t::boolean:
+        {
+            if (json.m_value.m_data.boolean)
+            {
+                oa.write("true", 4);
+            }
+            else
+            {
+                oa.write("false", 5);
+            }
+            return;
+        }
+
+        }
     }
 
 
@@ -100,7 +259,7 @@ public:
     {
         if (num == 0)
         {
-            oa.write("0", 1);
+            oa.write('0');
             return;
         }
 
@@ -109,22 +268,26 @@ public:
         {
             uval = static_cast<decltype(uval)>(0) - num;
         }
+        else
+        {
+            uval = num;
+        }
 
         auto iter = number_buffer.rbegin();
-        *(iter++) = '\0';
+        *iter = '\0';
 
         while (uval)
         {
-            *(iter++) = static_cast<char_type>('0' + uval % 10);
+            *(++iter) = static_cast<char_type>('0' + uval % 10);
             uval /= 10;
         }
         
         if (num < 0)
         {
-            *iter = '-';
+            *(++iter) = '-';
         }
 
-        oa.write(&(*iter), static_cast<std::size_t>(number_buffer.end() - iter - 1));
+        oa.write(&(*iter), static_cast<std::size_t>(iter - number_buffer.rbegin()));
     }
 
     void dump_float(number_float_t num)
@@ -135,13 +298,14 @@ public:
 
     void dump_string(const string_t& str)
     {
-        
+        // todo
+        oa.write(str.c_str(), str.size());
     }
 
 
 private:
     output_adapter<char_type>&  oa;
-    char_type                   indent;
+    char_type                   indent_char;
     string_t                    indent_string;
     std::array<char, 64>        number_buffer{ };
 };
