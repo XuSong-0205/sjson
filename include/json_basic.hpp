@@ -109,31 +109,29 @@ public:
     basic_json(const Floating num): m_value(static_cast<number_float_t>(num)) { }
 
 
-    basic_json(const initializer_list& init_list)
+    basic_json(initializer_list init_list)
     {
-        const bool is_an_object = std::all_of(init_list.begin(), init_list.end(), [](const basic_json& json){
+        const bool is_all_object = std::all_of(init_list.begin(), init_list.end(), [](const basic_json& json){
             return (json.is_array() && json.size() == 2 && json[0].is_string());
         });
 
-        if (is_an_object)
+        if (is_all_object)
         {
             m_value = json_value<basic_json>(value_t::object);
             for (const basic_json& json : init_list)
             {
-                m_value.m_data.object->emplace(*(json[0].m_value.m_data.string), json[1]);
+                m_value.m_data.object->emplace(std::move(*(json[0].m_value.m_data.string)), std::move(json[1]));
             }
         }
         else
         {
-            m_value = json_value<basic_json>(value_t::array);
-            m_value.m_data.array->reserve(init_list.size());
-            m_value.m_data.array->assign(init_list.begin(), init_list.end());
+            array(init_list).swap(*this);
         }
     }
 
 
 public:
-    static basic_json object(const initializer_list& init_list)
+    static basic_json object(initializer_list init_list)
     {
         if (init_list.size() != 2 || !(init_list.begin()->is_string()))
         {
@@ -141,11 +139,12 @@ public:
         }
 
         basic_json obj(value_t::object);
-        obj.m_value.m_data.object->emplace(*(init_list.begin()->m_value.m_data.string), *(init_list.begin() + 1));
+        obj.m_value.m_data.object->emplace( std::move(*(init_list.begin()->m_value.m_data.string)), 
+                                            std::move(*(init_list.begin() + 1)));
         return obj;
     }
 
-    static basic_json array(const initializer_list& init_list)
+    static basic_json array(initializer_list init_list)
     {
         basic_json arr(value_t::array);
         if (init_list.size())
@@ -158,11 +157,25 @@ public:
 
 
 public:
+    template<typename ValueType>
+    ValueType get()const
+    {
+        static_assert(std::is_default_constructible<ValueType>::value, 
+                        "types must be DefaultConstructible when used with get()");
+
+        ValueType value;
+        m_value.get(value);
+        return value;
+    }
+
+
+
+public:
     basic_json& operator[](size_type index)
     {
         if (is_null())
         {
-            m_value = json_value<basic_json>(value_t::array);
+            m_value = json_value(value_t::array);
         }
 
         if (!is_array())
@@ -194,6 +207,63 @@ public:
 
         return (*array)[index];
     }
+
+    template<typename KEY_TYPE,
+            typename std::enable_if<std::is_constructible<typename object_t::key_type, KEY_TYPE>::value, int>::type = 0>
+    basic_json& operator[](const KEY_TYPE& key)
+    {
+        if (is_null())
+        {
+            m_value = json_value<basic_json>(value_t::object);
+        }
+
+        if (!is_object())
+        {
+            throw json_invalid_key("json operator[] called on a non-object type");
+        }
+
+        return (*m_value.m_data.object)[key];
+    }
+
+    template<typename KEY_TYPE,
+            typename std::enable_if<std::is_constructible<typename object_t::key_type, KEY_TYPE>::value, int>::type = 0>
+    const basic_json& operator[](const KEY_TYPE& key)const
+    {
+        if (!is_object())
+        {
+            throw json_invalid_key("json operator[] called on a non-object type");
+        }
+
+        auto iter = m_value.m_data.object->find(key);
+        if (iter == m_value.m_data.object->end())
+        {
+            throw json_invalid_key("json operator[] key out of range");
+        }
+
+        return iter->second;
+    }
+
+
+    // explicitly convert functions
+    template<typename Ty>
+    operator Ty()const
+    {
+        return get<Ty>();
+    }
+
+
+    
+    friend std::basic_ostream<char_type>& operator<<(std::basic_ostream<char_type>& os, const basic_json& json)
+    {
+        const bool pretty_print = (os.width() > 0);
+        const auto indentation = (pretty_print ? out.width() : 0);
+        out.width(0);
+
+        output_stream_adapter<char_type> stream_adapter(os);
+        json_serializer<basic_json>(stream_adapter, out.fill()).dump(json, pretty_print, static_cast<unsigned int>(indentation));
+        return os;
+    }
+
 
 
 public:
@@ -249,6 +319,9 @@ public:
             case value_t::array:
                 return m_value.m_data.array->size();
 
+            case value_t::string:
+                return m_value.m_data.string->size();
+
             default:
                 return 1;
         }
@@ -258,8 +331,6 @@ public:
     {
         return size() == 0;
     }
-
-
 
 
 public:

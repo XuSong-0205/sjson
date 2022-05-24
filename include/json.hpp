@@ -18,8 +18,7 @@ template<
         class StringType = std::string,
         class IntegerType = std::int64_t,
         class FloatType = double,
-        class BooleanType = bool,
-        template<typename T, typename SFINAE = void> class JsonSerializer = json_serializer
+        class BooleanType = bool
         >
 class basic_json;
 

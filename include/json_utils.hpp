@@ -1,7 +1,6 @@
 #ifndef JSON_UTILS_HPP
 #define JSON_UTILS_HPP
 
-#include <type_traits>
 
 namespace sjson
 {
@@ -13,15 +12,13 @@ template<                                                               \
         class StringType,                                               \
         class NumberIntegerType,                                        \
         class NumberFloatType,                                          \
-        class BooleanType,                                              \
-        template<typename, typename = void> class JsonSerializer        \
+        class BooleanType                                               \
         > 
 
 
 #define BASIC_JSON_TEMPLATE_ARGS                        \
     ObjectType, ArrayType, StringType,                  \
-    NumberIntegerType, NumberFloatType, BooleanType,    \
-    JsonSerializer
+    NumberIntegerType, NumberFloatType, BooleanType
 
 
 

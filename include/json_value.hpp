@@ -37,7 +37,7 @@ public:
     using string_t          = typename BasicJsonType::string_t;;
     using number_integer_t  = typename BasicJsonType::number_integer_t;
     using number_float_t    = typename BasicJsonType::number_float_t;
-    using boolean_t         = typename BasicJsonType::boolean_t;;
+    using boolean_t         = typename BasicJsonType::boolean_t;
 
 public:
     json_value()
@@ -231,26 +231,114 @@ public:
         switch (m_type)
         {
             case value_t::object:
-            case value_t::array:
-            case value_t::string:
                 delete m_data.object;
                 m_data.object = nullptr;
-                m_type = value_t::null;
+
+            case value_t::array:
+                delete m_data.array;
+                m_data.array = nullptr;
+                break;
+
+            case value_t::string:
+                delete m_data.string;
+                m_data.string = nullptr;
                 break;
             
             default:
                 m_data.object = nullptr;
-                m_type = value_t::null;
                 break;
         }
+
+        m_type = value_t::null;
     }
 
 
     template<typename Ty, typename... Args>
-    Ty* create(Args&&... args)
+    static Ty* create(Args&&... args)
     {
         return new Ty(std::forward<Args>(args)...);
     }
+
+
+    void get(std::nullptr_t& null)const
+    {
+        if (m_type != value_t::null)
+        {
+            throw json_type_error("json value type must be a null");
+        }
+        
+        null = nullptr;
+    }
+
+    void get(object_t& obj)const
+    {
+        if (m_type != value_t::object)
+        {
+            throw json_type_error("json value type must be a object");
+        }
+
+        obj = *m_data.object;
+    }
+
+    void get(array_t& arr)const
+    {
+        if (m_type != value_t::array)
+        {
+            throw json_type_error("json value type must be a array");
+        }
+
+        arr = *m_data.array;
+    }
+
+    void get(string_t& str)const
+    {
+        if (m_type != value_t::string)
+        {
+            throw json_type_error("json value type must be a string");
+        }
+
+        str = *m_data.string;
+    }
+
+    template<typename Integer,
+            typename std::enable_if<std::is_integral<Integer>::value, int>::type = 0>
+    void get(Integer& num)const
+    {
+        if (m_type != value_t::number_integer)
+        {
+            throw json_type_error("json value type must be an integer");
+        }
+
+        num = m_data.number_integer;
+    }
+
+    template<typename Floating,
+            typename std::enable_if<std::is_floating_point<Floating>::value, int>::type = 0>
+    void get(Floating& num)const
+    {
+        if (m_type != value_t::number_float)
+        {
+            throw json_type_error("json value type must be a float");
+        }
+
+        num = m_data.number_float;
+    }
+
+    void get(boolean_t& val)const
+    {
+        if (m_type != value_t::boolean)
+        {
+            throw json_type_error("json value type must be a boolean");
+        }
+
+        val = m_data.boolean;
+    }
+
+    [[noreturn]] void get(...)const
+    {
+        throw json_type_error("get value type is unknown");
+    }
+
 
 
     bool operator==(const json_value& other)const noexcept
