@@ -4,13 +4,17 @@
 #include "../include/json.hpp"
 using json = sjson::json;
 
+
 #define ASSERT(arg) assert(arg)
+
+
 
 int main()
 {
     json obj = {
         {"test", 233},
         {"hello", "world"},
+        {"is_ok", true},
         {"obj", {
             {"000", 123}
             }
@@ -18,6 +22,12 @@ int main()
     };
 
     std::cout << std::setw(4) << obj << "\n";
+    std::cout << obj.dump(0) << "\n";
+    for (const auto& val : obj)
+    {
+        std::cout << val << " ";
+    }
+
 
 
     using ObjectType = std::map<std::string, json>;
@@ -50,7 +60,7 @@ int main()
     auto j10 = json::object({"test", 233});
     auto j11 = json::array({0, 1, 2, 3});
 
-    std::cout << "test end...\n";
+    std::cout << "\ntest end...\n";
     std::cin.get();
     return 0;
 }

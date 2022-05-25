@@ -3,9 +3,12 @@
 
 #include <iostream>
 #include <algorithm>
+#include <iterator>
 #include <initializer_list>
 #include "json_utils.hpp"
 #include "json_value.hpp"
+#include "json_parse.hpp"
+#include "json_iterator.hpp"
 #include "json_serializer.hpp"
 #include "json_exception.hpp"
 
@@ -16,7 +19,9 @@ BASIC_JSON_TEMPLATE_DECLARATION
 class basic_json
 {
 public:
-    friend struct json_serializer<basic_json>;
+    friend class json_serializer<basic_json>;
+    friend class iterator_impl<basic_json>;
+    friend class iterator_impl<const basic_json>;
 
     
 public:
@@ -28,24 +33,18 @@ public:
     using char_type         = typename StringType::value_type;
     using initializer_list  = std::initializer_list<basic_json>;
 
+    using iterator                  = iterator_impl<basic_json>;
+    using const_iterator            = iterator_impl<const basic_json>;
+    using reverse_iterator          = std::reverse_iterator<iterator>;
+    using const_reverse_iterator    = std::reverse_iterator<const_iterator>;
 
-    /// object type
-    using object_t  = ObjectType<StringType, basic_json>;
-
-    /// array type
-    using array_t   = ArrayType<basic_json>;
-
-    /// string type
-    using string_t  = StringType;
-
-    /// int type
-    using number_integer_t = NumberIntegerType;
-
-    /// float type
-    using number_float_t = NumberFloatType;
-
-    /// bool type
-    using boolean_t = BooleanType;
+public:
+    using object_t          = ObjectType<StringType, basic_json>;
+    using array_t           = ArrayType<basic_json>;
+    using string_t          = StringType;
+    using number_integer_t  = NumberIntegerType;
+    using number_float_t    = NumberFloatType;
+    using boolean_t         = BooleanType;
 
 
 public:
@@ -173,6 +172,92 @@ public:
     }
 
 
+    const object_t& as_object()const
+    {
+        if (!is_object())
+        {
+            throw json_type_error("json value type must be object");
+        }
+
+        return *m_value.m_data.object;
+    }
+
+    const array_t& as_array()const
+    {
+        if (!is_array())
+        {
+            throw json_type_error("json value type must be array");
+        }
+
+        return *m_value.m_data.array;
+    }
+
+    const string_t& as_string()const
+    {
+        if (!is_string())
+        {
+            throw json_type_error("json value type must be string");
+        }
+
+        return *m_value.m_data.string;
+    }
+
+    number_integer_t as_int()const
+    {
+        if (is_integer())
+        {
+            return m_value.m_data.number_integer;
+        }
+
+        if (is_float())
+        {
+            return static_cast<number_integer_t>(m_value.m_data.number_float);
+        }
+
+        throw json_type_error("json value type must be number");
+    }
+
+    number_float_t as_float()const
+    {
+        if (is_integer())
+        {
+            return static_cast<number_float_t>(m_value.m_data.number_integer);
+        }
+
+        if (is_float())
+        {
+            return m_value.m_data.number_float;
+        }
+
+        throw json_type_error("json value type must be number");
+    }
+
+    boolean_t as_bool()const
+    {
+        switch (type())
+        {
+        case value_t::null:
+            return false;
+        
+        case value_t::object:
+        case value_t::array:
+        case value_t::string:
+            return empty();
+        
+        case value_t::number_integer:
+            return m_value.m_data.number_integer != 0;
+
+        case value_t::number_float:
+            return m_value.m_data.number_float != 0.0;
+
+        case value_t::boolean:
+            return m_value.m_data.boolean;
+
+        default:
+            return false;
+        }
+    }
+
 
 public:
     basic_json& operator[](size_type index)
@@ -256,19 +341,108 @@ public:
     }
 
 
-    
+public:
+    iterator begin()
+    {
+        iterator iter(this);
+        iter.set_begin();
+        return iter;
+    }
+
+    const_iterator begin()const
+    {
+        return cbegin();
+    }
+
+    const_iterator cbegin()const
+    {
+        const_iterator iter(this);
+        iter.set_begin();
+        return iter;
+    }
+
+    iterator end()
+    {
+        iterator iter(this);
+        iter.set_end();
+        return iter;
+    }
+
+    const_iterator end()const
+    {
+        return cend();
+    }
+
+    const_iterator cend()const
+    {
+        const_iterator iter(this);
+        iter.set_end();
+        return iter;
+    }
+
+    reverse_iterator rbegin()
+    {
+        return reverse_iterator(end());
+    }
+
+    const_reverse_iterator rbegin()const
+    {
+        return const_reverse_iterator(end());
+    }
+
+    const_reverse_iterator crbegin()const
+    {
+        return const_reverse_iterator(cend());
+    }
+
+    reverse_iterator rend()
+    {
+        reverse_iterator(being());
+    }
+
+    const_reverse_iterator rend()const
+    {
+        return const_reverse_iterator(begin());
+    }
+
+    const_reverse_iterator crend()const
+    {
+        return const_reverse_iterator(cbegin());
+    }
+
+
+    // dump functions
+public:
+
     friend std::basic_ostream<char_type>& operator<<(std::basic_ostream<char_type>& os, const basic_json& json)
     {
-        const bool pretty_print = (os.width() > 0);
-        const auto indent_step = (pretty_print ? os.width() : 0);
+        const auto indent_step = (os.width() > 0 ? os.width() : 0);
         os.width(0);
 
-        output_stream_adapter<char_type> stream_adapter(os);
-        json_serializer<basic_json>(stream_adapter, os.fill()).dump(json, pretty_print, static_cast<unsigned int>(indent_step));
+        stream_output_adapter<char_type> stream_adapter(os);
+        json.dump(stream_adapter, static_cast<unsigned int>(indent_step), os.fill());
         return os;
     }
 
 
+    string_t dump(
+        const unsigned int indent = 0,
+        const char_type indent_char = ' ')const
+    {
+        string_t result;
+        string_output_adapter<string_t> string_output(result);
+        dump(string_output, indent, indent_char);
+        return result;
+    }
+
+
+    void dump(
+        output_adapter<char_type>& oa,
+        const unsigned int indent = 0,
+        const char_type indent_char = ' ')const
+    {
+        json_serializer<basic_json>(oa, indent_char).dump(*this, indent);
+    }
 
 public:
 
@@ -353,7 +527,6 @@ public:
     bool is_number()const noexcept  { return is_integer() || is_float();                }
 
     bool is_bool()const noexcept    { return m_value.m_type == value_t::boolean;        }
-
 
 
 private:
