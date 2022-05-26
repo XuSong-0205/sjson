@@ -40,6 +40,7 @@ int main()
     {
         std::cout << it.key() << ": " << it.value() << ", ";
     }
+    std::cout << "\n";
 
 
     ASSERT(obj.at("test").get<int>() == 233);
@@ -59,8 +60,13 @@ int main()
     ASSERT(j3.get<int>() == 233);
 
 
-    auto j10 = json::object({"test", 233});
-    auto j11 = json::array({0, 1, 2, 3});
+    auto j10 = json::object({ "test", 233 });
+    auto j11 = json::array({ 0, 1, 2, 3 });
+
+
+    auto j20 = json::parse("{ \"happy\": true, \"pi\": 3.141, \"name\": \"中文测试\" }");
+    std::cout << color::F_YELLOW << j20 << color::CLEAR_F << "\n";
+    
 
 
     std::cout << "\ntest end...\n";

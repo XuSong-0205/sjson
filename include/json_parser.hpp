@@ -2,7 +2,7 @@
 #define JSON_PARSE_HPP
 
 #include <cstdio>       // FILE
-#include <cctype>       // isdight
+#include <cctype>       // isdigit
 #include <ios>          // basic_istream, basic_streambuf
 #include <type_traits>  // char_traits
 #include "json_exception.hpp"
@@ -261,7 +261,8 @@ public:
             return token_type::parse_error;
         }
 
-        skip_spaces();
+        // skip current char
+        read_next();
 
         return result;
     }
@@ -284,58 +285,343 @@ public:
 
     token_type scan_string()
     {
-        
+        if (current != '\"')
+        {
+            return token_type::parse_error;
+        }
+
+        string_buffer.clear();
+        while (true)
+        {
+            const auto ch = read_next();
+            switch (ch)
+            {
+            case char_traits::eof():
+            {
+                return token_type::end_of_input;
+            }
+
+            case '\"':
+            {
+                read_next();
+                return token_type::value_string;
+            }
+
+            case 0x00:
+            case 0x01:
+            case 0x02:
+            case 0x03:
+            case 0x04:
+            case 0x05:
+            case 0x06:
+            case 0x07:
+            case 0x08:
+            case 0x09:
+            case 0x0A:
+            case 0x0B:
+            case 0x0C:
+            case 0x0D:
+            case 0x0E:
+            case 0x0F:
+            case 0x10:
+            case 0x11:
+            case 0x12:
+            case 0x13:
+            case 0x14:
+            case 0x15:
+            case 0x16:
+            case 0x17:
+            case 0x18:
+            case 0x19:
+            case 0x1A:
+            case 0x1B:
+            case 0x1C:
+            case 0x1D:
+            case 0x1E:
+            case 0x1F:
+            {
+                return token_type::parse_error;
+            }
+
+            case '\\':
+            {
+                switch (read_next())
+                {
+                case '\"':
+                    string_buffer.push_back('\"');
+                    break;
+
+                case '\\':
+                    string_buffer.push_back('\\');
+                    break;
+
+                case '/':
+                    string_buffer.push_back('/');
+                    break;
+
+                case 'b':
+                    string_buffer.push_back('\b');
+                    break;
+
+                case 'f':
+                    string_buffer.push_back('\f');
+                    break;
+                    
+                case 'n':
+                    string_buffer.push_back('\n');
+                    break;
+                    
+                case 'r':
+                    string_buffer.push_back('\r');
+                    break;
+                    
+                case 't':
+                    string_buffer.push_back('\t');
+                    break;
+
+                case 'u':
+                {
+                    const auto code = get_escaped_code();
+                    if (code == -1)
+                    {
+                        return token_type::parse_error;
+                    }
+
+                    string_buffer.push_back(char_traits::to_char_type(code));
+                    break;
+                }
+
+                default:
+                {
+                    // invalid escaped char
+                    return token_type::parse_error;
+                }
+                }
+
+                break;
+            }
+
+            default:
+            {
+                string_buffer.push_back(char_traits::to_char_type(ch));
+            }
+            }
+        }
     }
 
     int32_t get_escaped_code()
     {
+        int32_t byte = 0;
+        for (const auto factor : { 12, 8, 4, 0 })
+        {
+            const auto n = read_next();
+            if ('0' <= n && n <= '9')
+            {
+                byte |= (n - '0') << factor;
+            }
+            else if ('A' <= n && n <= 'F')
+            {
+                byte |= (n - 'A' + 10) << factor;
+            }
+            else if ('a' <= n && n <= 'f')
+            {
+                byte |= (n - 'a' + 10) << factor;
+            }
+            else
+            {
+                return -1;
+            }
+        }
 
+        return byte;
     }
 
     token_type scan_number()
     {
+        is_negative = false;
+        number_integer = static_cast<number_integer_t>(0);
+        number_float = static_cast<number_float_t>(0.0);
 
-    }
+        if (current == '-')
+        {
+            return scan_negative();
+        }
 
-    token_type scan_integer()
-    {
+        if (current == '0')
+        {
+            return scan_zero();
+        }
 
-    }
-
-    token_type scan_float()
-    {
-
+        return scan_integer();
     }
 
     token_type scan_negative()
     {
+        if (current == '-')
+        {
+            is_negative = true;
+            read_next();
+            
+            return scan_integer();
+        }
 
+        return token_type::parse_error;
     }
 
     token_type scan_zero()
     {
+        if (current == '0')
+        {
+            if (read_next() == '.')
+            {
+                return scan_float();
+            }
+            else
+            {
+                return token_type::value_integer;
+            }
+        }
 
+        return token_type::parse_error;
+    }
+
+    token_type scan_integer()
+    {
+        if (std::isdigit(current))
+        {
+            number_integer = static_cast<number_integer_t>(current - '0');
+
+            while (true)
+            {
+                const auto ch = read_next();
+                if (ch == '.')
+                {
+                    number_float = number_integer;
+                    number_integer = 0;
+                    
+                    return scan_float();
+                }
+
+                if (ch == 'e' || ch == 'E')
+                {
+                    number_float = number_integer;
+                    number_integer = 0;
+                    
+                    return scan_exponent();
+                }
+
+                if (std::isdigit(ch))
+                {
+                    number_integer = number_integer * 10 + (ch - '0');
+                }
+                else
+                {
+                    break;
+                }
+            }
+
+            return token_type::value_integer;
+        }
+
+        return token_type::parse_error;
+    }
+
+    token_type scan_float()
+    {
+        if (current != '.')
+        {
+            return token_type::parse_error;
+        }
+
+        
+        if (std::isdigit(read_next()))
+        {
+            number_float_t fraction = static_cast<number_float_t>(0.1);
+            number_float += static_cast<number_float_t>(current - '0') * fraction;
+
+            while (true)
+            {
+                const auto ch = read_next();
+                if (ch == 'e' || ch == 'E')
+                {
+                    return scan_exponent();
+                }
+
+                if (std::isdigit(ch))
+                {
+                    fraction *= static_cast<number_float_t>(0.1);
+                    number_float += static_cast<number_float_t>(ch - '0') * fraction;
+                }
+                else
+                {
+                    break;
+                }
+            }
+
+            return token_type::value_float;
+        }
+
+        return token_type::parse_error;
     }
 
     token_type scan_exponent()
     {
+        if (current != 'e' && current != 'E')
+        {
+            return token_type::parse_error;
+        }
 
+        read_next();
+
+        if ((std::isdigit(current) && current != '0') || (current == '-') || (current == '+'))
+        {
+            number_float_t base = 10;
+            if (current == '+')
+            {
+                read_next();
+            }
+            else if (current == '-')
+            {
+                base = static_cast<number_float_t>(0.1);
+                read_next();
+            }
+
+            uint32_t exponect = static_cast<uint32_t>(current - '0');
+            while (std::isdigit(read_next()))
+            {
+                exponect = (exponect * 10) + static_cast<uint32_t>(current - '0');
+            }
+
+            number_float_t power = 1;
+            for (; exponect; exponect >>= 1, base *= base)
+            {
+                if (exponect & 1)
+                {
+                    power *= base;
+                }
+            }
+
+            number_float *= power;
+            return token_type::value_float;
+        }
+
+        return token_type::parse_error;
     }
 
 
     number_integer_t token_to_integer()const
     {
-
+        return is_negative ? -number_integer : number_integer;
     }
 
     number_float_t token_to_float()const
     {
-
+        return is_negative ? -number_float : number_float;
     }
 
     string_t token_to_string()const
     {
-
+        return string_buffer;
     }
 
 
@@ -343,8 +629,8 @@ private:
     input_adapter<char_type>&   adapter;
     int_type                    current = char_traits::eof();
     bool                        is_negative = false;
-    number_integer_t            value_integer = 0;
-    number_float_t              value_float = 0.0;
+    number_integer_t            number_integer = 0;
+    number_float_t              number_float = 0.0;
     string_t                    string_buffer;
 };
 
@@ -360,13 +646,144 @@ template <typename BasicJsonType>
 class json_parser
 {
 public:
-    using char_type         = typename BasicJsonType::char_type;
     using object_t          = typename BasicJsonType::object_t;
     using array_t           = typename BasicJsonType::array_t;
-    using string_t          = typename BasicJsonType::string_t;;
+    using string_t          = typename BasicJsonType::string_t;
     using number_integer_t  = typename BasicJsonType::number_integer_t;
     using number_float_t    = typename BasicJsonType::number_float_t;
     using boolean_t         = typename BasicJsonType::boolean_t;
+    using char_type         = typename BasicJsonType::char_type;
+    using char_traits       = std::char_traits<char_type>;
+
+public:
+    json_parser(input_adapter<char_type>& ia)
+        : lexer(ia), last_token(token_type::uninitialized) { }
+
+    BasicJsonType parse()
+    {
+        auto json = parse_value();
+        if (get_token() != token_type::end_of_input)
+        {
+            throw json_parse_error("unexpected token, expect end");
+        }
+
+        return json;
+    }
+
+private:
+    token_type get_token()
+    {
+        last_token = lexer.scan();
+        return last_token;
+    }
+
+    BasicJsonType parse_value(bool get_next = true)
+    {
+        token_type token = last_token;
+        if (get_next)
+        {
+            token = get_token();
+        }
+
+        switch (token)
+        {
+        case token_type::literal_null:
+            return nullptr;
+
+        case token_type::literal_true:
+            return true;
+
+        case token_type::literal_false:
+            return false;
+
+        case token_type::value_integer:
+            return lexer.token_to_integer();
+
+        case token_type::value_float:
+            return lexer.token_to_float();
+
+        case token_type::value_string:
+            return lexer.token_to_string();
+
+        case token_type::begin_object:
+        {
+            auto json = BasicJsonType(value_t::object);
+            while (true)
+            {
+                // {}, parse a empty object
+                if (get_token() == token_type::end_object)
+                {
+                    break;
+                }
+
+                // parse key
+                if (last_token != token_type::value_string)
+                {
+                    break;
+                }
+
+                // read key
+                string_t key = lexer.token_to_string();
+                if (get_token() != token_type::name_separator)
+                {
+                    break;
+                }
+
+                // read value, insert pair
+                json.m_value.m_data.object->emplace(std::make_pair(key, parse_value()));
+
+                // read ','
+                if (get_token() != token_type::value_separator)
+                {
+                    break;
+                }
+            }
+
+            if (last_token != token_type::end_object)
+            {
+                throw json_parse_error("unexpected token in object");
+            }
+
+            return json;
+        }
+
+        case token_type::begin_array:
+        {
+            auto json = BasicJsonType(value_t::array);
+            while (true)
+            {
+                // [], parse a empty array
+                if (get_token() == token_type::end_array)
+                {
+                    break;
+                }
+
+                json.m_value.m_data.array->push_back(parse_value(false));
+
+                // read ','
+                if (get_token() != token_type::value_separator)
+                {
+                    break;
+                }
+            }
+
+            if (last_token != token_type::end_array)
+            {
+                throw json_parse_error("unexpected token in array");
+            }
+
+            return json;
+        }
+
+        default:
+            throw json_parse_error("unexpected token");
+        }
+    }
+
+    
+private:
+    json_lexer<BasicJsonType>   lexer;
+    token_type                  last_token;
 };
 
 

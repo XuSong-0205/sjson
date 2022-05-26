@@ -492,6 +492,42 @@ public:
         json_serializer<basic_json>(oa, indent_char).dump(*this, indent);
     }
 
+
+    // parse function
+public:
+    friend operator>>(std::basic_istream<char_type>& is, basic_json& json)
+    {
+        stream_input_adapter<char_type> adapter(is);
+        json = parse(adapter);
+        return json;
+    }
+
+    static basic_json parse(const string_t& str)
+    {
+        string_input_adapter<string_t> adapter(str);
+        return parse(adapter);
+    }
+
+    static basic_json parse(const char_type* str)
+    {
+        buffer_input_adapter<char_type> adapter(str);
+        return parse(adapter);
+    }
+
+    static basic_json parse(std::FILE* file)
+    {
+        file_input_adapter<char_type> adapter(file);
+        return parse(adapter);
+    }
+
+
+private:
+    static basic_json parse(input_adapter<char_type>& adapter)
+    {
+        return json_parser<basic_json>(adapter).parse();
+    }
+
+    
 public:
 
     void swap(basic_json& other)noexcept    
