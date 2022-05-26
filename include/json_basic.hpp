@@ -7,7 +7,7 @@
 #include <initializer_list>
 #include "json_utils.hpp"
 #include "json_value.hpp"
-#include "json_parse.hpp"
+#include "json_parser.hpp"
 #include "json_iterator.hpp"
 #include "json_serializer.hpp"
 #include "json_exception.hpp"
@@ -22,6 +22,7 @@ public:
     friend class json_serializer<basic_json>;
     friend class iterator_impl<basic_json>;
     friend class iterator_impl<const basic_json>;
+    friend class json_parser<basic_json>;
 
     
 public:
@@ -272,7 +273,7 @@ public:
             throw json_invalid_key("operator[] called on a non-array object");
         }
 
-        const auto array = m_value.m_data.array;
+        auto array = m_value.m_data.array;
         if (index >= array->size())
         {
             array->insert(array->end(), index - array->size() + 1, basic_json());
@@ -288,7 +289,7 @@ public:
             throw json_invalid_key("json operator[] called on a non-array object");
         }
 
-        const auto array = m_value.m_data.array;
+        auto array = m_value.m_data.array;
         if (index >= array->size())
         {
             throw std::out_of_range("json operator[] index out of range");
@@ -330,6 +331,53 @@ public:
         }
 
         return iter->second;
+    }
+
+
+    basic_json& at(size_type index)
+    {
+        if (!is_array())
+        {
+            throw json_invalid_key("json at called on a non-array object");
+        }
+
+        auto array = m_value.m_data.array;
+        if (index >= array->size())
+        {
+            throw std::out_of_range("json index out of range");
+        }
+
+        return (*array)[index];
+    }
+
+    const basic_json& at(size_type index)const
+    {
+        return static_cast<basic_json*>(this)->at(index);
+    }
+
+    template<typename KEY_TYPE,
+            typename std::enable_if<std::is_constructible<typename object_t::key_type, KEY_TYPE>::value, int>::type = 0>
+    basic_json& at(const KEY_TYPE& key)
+    {
+        if (!is_object())
+        {
+            throw json_invalid_key("json at called on a non-object type");
+        }
+
+        auto iter = m_value.m_data.object->find(key);
+        if (iter == m_value.m_data.object->end())
+        {
+            throw json_invalid_key("json at key out of range");
+        }
+
+        return iter->second;
+    }
+
+    template<typename KEY_TYPE,
+            typename std::enable_if<std::is_constructible<typename object_t::key_type, KEY_TYPE>::value, int>::type = 0>
+    const basic_json& at(const KEY_TYPE& key)const
+    {
+        return static_cast<basic_json*>(this)->at(key);
     }
 
 
@@ -533,13 +581,6 @@ private:
     json_value<basic_json>  m_value;
 
 };
-
-
-
-
-
-
-
 
 
 } // namespace sjson

@@ -27,10 +27,6 @@ enum class value_t : std::uint8_t
 template<typename BasicJsonType>
 class json_value
 {
-private:
-    friend BasicJsonType;
-    // friend struct json_serializer<BasicJsonType>;
-
 public:
     using char_type         = typename BasicJsonType::char_type;
     using object_t          = typename BasicJsonType::object_t;

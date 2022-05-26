@@ -82,7 +82,7 @@ public:
     using char_type         = typename BasicJsonType::char_type;
     using object_t          = typename BasicJsonType::object_t;
     using array_t           = typename BasicJsonType::array_t;
-    using string_t          = typename BasicJsonType::string_t;;
+    using string_t          = typename BasicJsonType::string_t;
     using number_integer_t  = typename BasicJsonType::number_integer_t;
     using number_float_t    = typename BasicJsonType::number_float_t;
     using boolean_t         = typename BasicJsonType::boolean_t;

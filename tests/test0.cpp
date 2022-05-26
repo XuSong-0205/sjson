@@ -1,7 +1,9 @@
 #include <iostream>
 #include <cassert>
 #include <iomanip>
-#include "../include/json.hpp"
+#include <vector>
+#include "utils\color.hpp"
+#include "..\include\json.hpp"
 using json = sjson::json;
 
 
@@ -18,28 +20,32 @@ int main()
         {"obj", {
             {"000", 123}
             }
-        }
+        },
+        {"array", {
+            0, 1, 1, 2, 3, 5, 8
+        }}
     };
 
-    std::cout << std::setw(4) << obj << "\n";
-    std::cout << obj.dump(0) << "\n";
+    std::cout << color::F_GREEN << std::setw(4) << obj << "\n" << color::CLEAR_F;
+    std::cout << color::F_BLUE << obj.dump(0) << "\n" << color::CLEAR_F;
+
     for (const auto& val : obj)
     {
         std::cout << val << " ";
     }
+    std::cout << "\n";
+
+    
+    for (auto it = obj.cbegin(), end = obj.cend(); it != end; ++it)
+    {
+        std::cout << it.key() << ": " << it.value() << ", ";
+    }
 
 
-
-    using ObjectType = std::map<std::string, json>;
-    using KEY_TYPE = decltype("test");
-    constexpr auto is_cont = std::is_constructible<typename ObjectType::key_type, KEY_TYPE>::value;
-    auto v_test = obj["test"];
-    ASSERT(v_test.get<int>() == 233);
+    ASSERT(obj.at("test").get<int>() == 233);
+    ASSERT(obj["obj"].as_object().at("000").get<int>() == 123);
 
 
-    auto v_obj = obj["obj"];
-    auto v_000 = v_obj["000"];
-    ASSERT(v_000.get<int>() == 123);
 
     json j0 = nullptr;
     json j1 = {"pi", 3.14};
@@ -48,19 +54,16 @@ int main()
     json j4 = 1.414;
     json j5 = true;
 
-
-    double v40 = j4;
-    auto v4 = static_cast<double>(j4);
-    ASSERT(v4 == 1.414);
-
-    auto v3 = j3.get<int>();
-    ASSERT(v3 == 233);
+    ASSERT(j0.get<std::nullptr_t>() == nullptr);
+    ASSERT(static_cast<double>(j4) == 1.414);
+    ASSERT(j3.get<int>() == 233);
 
 
     auto j10 = json::object({"test", 233});
     auto j11 = json::array({0, 1, 2, 3});
 
+
     std::cout << "\ntest end...\n";
-    std::cin.get();
+    //std::cin.get();
     return 0;
 }

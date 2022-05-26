@@ -287,6 +287,8 @@ public:
             break;
         }
         }
+
+        return *this;
     }
 
     iterator_impl operator--(int)
@@ -334,11 +336,13 @@ public:
             break;
         }
         }
+
+        return *this;
     }
 
     iterator_impl& operator-=(difference_type off)
     {
-        operator+=(-off);
+        return operator+=(-off);
     }
 
     bool operator==(const iterator_impl& other)
@@ -370,6 +374,7 @@ public:
             return m_iter.original_iter == other.m_iter.original_iter;
         }
         }
+
     }
 
     bool operator!=(const iterator_impl& other)
