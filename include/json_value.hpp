@@ -215,13 +215,12 @@ public:
     }
 
 
-
+public:
     void swap(json_value& other)noexcept
     {
         std::swap(m_type, other.m_type);
         std::swap(m_data, other.m_data);
     }
-
 
     void clear()
     {
@@ -249,7 +248,6 @@ public:
         m_type = value_t::null;
     }
 
-
     template<typename Ty, typename... Args>
     static Ty* create(Args&&... args)
     {
@@ -257,6 +255,7 @@ public:
     }
 
 
+public:
     void get(std::nullptr_t& null)const
     {
         if (m_type != value_t::null)
@@ -337,6 +336,7 @@ public:
     }
 
 
+public:
     bool operator==(const json_value& other)const
     {
         if (m_type == other.m_type)

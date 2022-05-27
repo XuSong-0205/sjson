@@ -161,6 +161,242 @@ public:
 
 
 public:
+    bool is_null()const noexcept    { return m_value.m_type == value_t::null;           }
+
+    bool is_object()const noexcept  { return m_value.m_type == value_t::object;         }
+
+    bool is_array()const noexcept   { return m_value.m_type == value_t::array;          }
+    
+    bool is_string()const noexcept  { return m_value.m_type == value_t::string;         }
+
+    bool is_integer()const noexcept { return m_value.m_type == value_t::number_integer; }
+
+    bool is_float()const noexcept   { return m_value.m_type == value_t::number_float;   }
+
+    bool is_number()const noexcept  { return is_integer() || is_float();                }
+
+    bool is_bool()const noexcept    { return m_value.m_type == value_t::boolean;        }
+
+    
+    value_t type()const noexcept
+    {
+        return m_value.m_type;
+    }
+
+    string_t type_name()const noexcept
+    {
+        switch (type())
+        {
+            case value_t::null:
+                return string_t("null");
+
+            case value_t::object:
+                return string_t("object");
+
+            case value_t::array:
+                return string_t("array");
+
+            case value_t::string:
+                return string_t("string");
+
+            case value_t::number_integer:
+            case value_t::number_float:
+                return string_t("number");
+
+            case value_t::boolean:
+                return string_t("boolean");
+
+            default:
+                return string_t("unknown");
+        }
+    }
+
+    void swap(basic_json& other)noexcept    
+    { 
+        m_value.swap(other.m_value);  
+    }
+    
+
+public:
+    iterator begin()
+    {
+        iterator iter(this);
+        iter.set_begin();
+        return iter;
+    }
+
+    const_iterator begin()const
+    {
+        return cbegin();
+    }
+
+    const_iterator cbegin()const
+    {
+        const_iterator iter(this);
+        iter.set_begin();
+        return iter;
+    }
+
+    iterator end()
+    {
+        iterator iter(this);
+        iter.set_end();
+        return iter;
+    }
+
+    const_iterator end()const
+    {
+        return cend();
+    }
+
+    const_iterator cend()const
+    {
+        const_iterator iter(this);
+        iter.set_end();
+        return iter;
+    }
+
+    reverse_iterator rbegin()
+    {
+        return reverse_iterator(end());
+    }
+
+    const_reverse_iterator rbegin()const
+    {
+        return const_reverse_iterator(end());
+    }
+
+    const_reverse_iterator crbegin()const
+    {
+        return const_reverse_iterator(cend());
+    }
+
+    reverse_iterator rend()
+    {
+        reverse_iterator(being());
+    }
+
+    const_reverse_iterator rend()const
+    {
+        return const_reverse_iterator(begin());
+    }
+
+    const_reverse_iterator crend()const
+    {
+        return const_reverse_iterator(cbegin());
+    }
+    
+
+public:
+    size_type size()const noexcept
+    {
+        switch (type())
+        {
+            case value_t::null:
+                return 0;
+
+            case value_t::object:
+                return m_value.m_data.object->size();
+
+            case value_t::array:
+                return m_value.m_data.array->size();
+
+            case value_t::string:
+                return m_value.m_data.string->size();
+
+            default:
+                return 1;
+        }
+    }
+
+    bool empty()const noexcept
+    {
+        return size() == 0;
+    }
+
+
+public:
+    const_iterator find(const typename object_t::key_type& key)const
+    {
+        if (is_object())
+        {
+            const_iterator iter(this);
+            iter.m_iter.object_iter = m_value.m_data.object->find(key);
+            return iter;
+        }
+
+        return cend();
+    }
+
+    bool contains(const typename object_t::key_type& key)const
+    {
+        return find(key) != cend();
+    }
+
+    const_iterator erase(const typename object_t::key_type& key)
+    {
+        if (is_object())
+        {
+            m_value.m_data.object->erase(key);
+        }
+    }
+
+    const_iterator erase(const_iterator iter)
+    {
+        if (is_object())
+        {
+            m_value.m_data.object->erase(iter);
+        }
+    }
+
+    // only for array
+    void push_back(const basic_json& json)
+    {
+        emplace_back(json);
+    }
+
+    // only for array
+    void push_back(basic_json&& json)
+    {
+        emplace_back(std::move(json));
+    }
+
+    // only for array
+    template<typename... Args>
+    void emplace_back(Args&&... args)
+    {
+        if (is_null())
+        {
+            m_value = json_value<basic_json>(value_t::array);
+        }
+        
+        if (!is_array())
+        {
+            throw json_type_error("emplace_back() only for an array value");
+        }
+
+        m_value.m_data.array->emplace_back(std::forward<Args>(args)...);
+    }
+
+    // only for array
+    void pop_back()
+    {
+        if (!is_array())
+        {
+            throw json_type_error("pop_back() only for an array value");
+        }
+
+        m_value.m_data.array->pop_back();
+    }
+
+    // clear json and make empty
+    void clear()
+    {
+        m_value.clear();
+    }
+
+
+public:
     template<typename ValueType>
     ValueType get()const
     {
@@ -171,7 +407,6 @@ public:
         m_value.get(value);
         return value;
     }
-
 
     const object_t& as_object()const
     {
@@ -309,9 +544,7 @@ public:
         return (*array)[index];
     }
 
-    template<typename KEY_TYPE,
-            typename std::enable_if<std::is_constructible<typename object_t::key_type, KEY_TYPE>::value, int>::type = 0>
-    basic_json& operator[](const KEY_TYPE& key)
+    basic_json& operator[](const typename object_t::key_type& key)
     {
         if (is_null())
         {
@@ -326,9 +559,7 @@ public:
         return (*m_value.m_data.object)[key];
     }
 
-    template<typename KEY_TYPE,
-            typename std::enable_if<std::is_constructible<typename object_t::key_type, KEY_TYPE>::value, int>::type = 0>
-    const basic_json& operator[](const KEY_TYPE& key)const
+    const basic_json& operator[](const typename object_t::key_type& key)const
     {
         if (!is_object())
         {
@@ -367,9 +598,7 @@ public:
         return static_cast<basic_json*>(this)->at(index);
     }
 
-    template<typename KEY_TYPE,
-            typename std::enable_if<std::is_constructible<typename object_t::key_type, KEY_TYPE>::value, int>::type = 0>
-    basic_json& at(const KEY_TYPE& key)
+    basic_json& at(const typename object_t::key_type& key)
     {
         if (!is_object())
         {
@@ -385,9 +614,7 @@ public:
         return iter->second;
     }
 
-    template<typename KEY_TYPE,
-            typename std::enable_if<std::is_constructible<typename object_t::key_type, KEY_TYPE>::value, int>::type = 0>
-    const basic_json& at(const KEY_TYPE& key)const
+    const basic_json& at(const typename object_t::key_type& key)const
     {
         return static_cast<basic_json*>(this)->at(key);
     }
@@ -398,76 +625,6 @@ public:
     operator Ty()const
     {
         return get<Ty>();
-    }
-
-
-public:
-    iterator begin()
-    {
-        iterator iter(this);
-        iter.set_begin();
-        return iter;
-    }
-
-    const_iterator begin()const
-    {
-        return cbegin();
-    }
-
-    const_iterator cbegin()const
-    {
-        const_iterator iter(this);
-        iter.set_begin();
-        return iter;
-    }
-
-    iterator end()
-    {
-        iterator iter(this);
-        iter.set_end();
-        return iter;
-    }
-
-    const_iterator end()const
-    {
-        return cend();
-    }
-
-    const_iterator cend()const
-    {
-        const_iterator iter(this);
-        iter.set_end();
-        return iter;
-    }
-
-    reverse_iterator rbegin()
-    {
-        return reverse_iterator(end());
-    }
-
-    const_reverse_iterator rbegin()const
-    {
-        return const_reverse_iterator(end());
-    }
-
-    const_reverse_iterator crbegin()const
-    {
-        return const_reverse_iterator(cend());
-    }
-
-    reverse_iterator rend()
-    {
-        reverse_iterator(being());
-    }
-
-    const_reverse_iterator rend()const
-    {
-        return const_reverse_iterator(begin());
-    }
-
-    const_reverse_iterator crend()const
-    {
-        return const_reverse_iterator(cbegin());
     }
 
 
@@ -538,91 +695,6 @@ private:
     {
         return json_parser<basic_json>(adapter).parse();
     }
-
-    
-public:
-
-    void swap(basic_json& other)noexcept    
-    { 
-        m_value.swap(other.m_value);  
-    }
-
-    value_t type()const noexcept
-    {
-        return m_value.m_type;
-    }
-
-    string_t type_name()const noexcept
-    {
-        switch (type())
-        {
-            case value_t::null:
-                return string_t("null");
-
-            case value_t::object:
-                return string_t("object");
-
-            case value_t::array:
-                return string_t("array");
-
-            case value_t::string:
-                return string_t("string");
-
-            case value_t::number_integer:
-            case value_t::number_float:
-                return string_t("number");
-
-            case value_t::boolean:
-                return string_t("boolean");
-
-            default:
-                return string_t("unknown");
-        }
-    }
-
-    size_type size()const noexcept
-    {
-        switch (type())
-        {
-            case value_t::null:
-                return 0;
-
-            case value_t::object:
-                return m_value.m_data.object->size();
-
-            case value_t::array:
-                return m_value.m_data.array->size();
-
-            case value_t::string:
-                return m_value.m_data.string->size();
-
-            default:
-                return 1;
-        }
-    }
-
-    bool empty()const noexcept
-    {
-        return size() == 0;
-    }
-
-
-public:
-    bool is_null()const noexcept    { return m_value.m_type == value_t::null;           }
-
-    bool is_object()const noexcept  { return m_value.m_type == value_t::object;         }
-
-    bool is_array()const noexcept   { return m_value.m_type == value_t::array;          }
-    
-    bool is_string()const noexcept  { return m_value.m_type == value_t::string;         }
-
-    bool is_integer()const noexcept { return m_value.m_type == value_t::number_integer; }
-
-    bool is_float()const noexcept   { return m_value.m_type == value_t::number_float;   }
-
-    bool is_number()const noexcept  { return is_integer() || is_float();                }
-
-    bool is_bool()const noexcept    { return m_value.m_type == value_t::boolean;        }
 
 
 private:

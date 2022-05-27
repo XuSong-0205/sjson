@@ -105,6 +105,9 @@ template<typename BasicJsonType>
 class iterator_impl
 {
 public:
+    friend BasicJsonType;
+
+public:
     using char_type         = typename BasicJsonType::char_type;
     using object_t          = typename BasicJsonType::object_t;
     using array_t           = typename BasicJsonType::array_t;
