@@ -729,7 +729,7 @@ private:
                     break;
                 }
 
-                // read value, insert pair
+                // read value and insert pair
                 json.m_value.m_data.object->emplace(std::make_pair(key, parse_value()));
 
                 // read ','

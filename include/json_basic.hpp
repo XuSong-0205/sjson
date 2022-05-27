@@ -26,13 +26,13 @@ public:
 
     
 public:
-    using value_type        = basic_json;
-    using reference         = value_type&;
-    using const_reference   = const value_type&;
-    using difference_type   = std::ptrdiff_t;
-    using size_type         = std::size_t;
-    using char_type         = typename StringType::value_type;
-    using initializer_list  = std::initializer_list<basic_json>;
+    using value_type                = basic_json;
+    using reference                 = value_type&;
+    using const_reference           = const value_type&;
+    using difference_type           = std::ptrdiff_t;
+    using size_type                 = std::size_t;
+    using char_type                 = typename StringType::value_type;
+    using initializer_list          = std::initializer_list<basic_json>;
 
     using iterator                  = iterator_impl<basic_json>;
     using const_iterator            = iterator_impl<const basic_json>;
@@ -40,12 +40,12 @@ public:
     using const_reverse_iterator    = std::reverse_iterator<const_iterator>;
 
 public:
-    using object_t          = ObjectType<StringType, basic_json>;
-    using array_t           = ArrayType<basic_json>;
-    using string_t          = StringType;
-    using number_integer_t  = NumberIntegerType;
-    using number_float_t    = NumberFloatType;
-    using boolean_t         = BooleanType;
+    using object_t                  = ObjectType<StringType, basic_json>;
+    using array_t                   = ArrayType<basic_json>;
+    using string_t                  = StringType;
+    using number_integer_t          = NumberIntegerType;
+    using number_float_t            = NumberFloatType;
+    using boolean_t                 = BooleanType;
 
 
 public:
@@ -261,6 +261,17 @@ public:
 
 
 public:
+    bool operator==(const basic_json& other)const
+    {
+        return m_value == other.m_value;
+    }
+
+    bool operator!=(const basic_json& other)const
+    {
+        return m_value != other.m_value;
+    }
+
+
     basic_json& operator[](size_type index)
     {
         if (is_null())
@@ -334,6 +345,7 @@ public:
     }
 
 
+public:
     basic_json& at(size_type index)
     {
         if (!is_array())
@@ -495,11 +507,11 @@ public:
 
     // parse function
 public:
-    friend operator>>(std::basic_istream<char_type>& is, basic_json& json)
+    friend std::basic_istream<char_type>& operator>>(std::basic_istream<char_type>& is, basic_json& json)
     {
         stream_input_adapter<char_type> adapter(is);
         json = parse(adapter);
-        return json;
+        return is;
     }
 
     static basic_json parse(const string_t& str)

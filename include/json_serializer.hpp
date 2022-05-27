@@ -4,6 +4,7 @@
 #include <cstdio>       // sprintf
 #include <type_traits>  // make_unsigned
 #include <ostream>      // basic_ostream
+#include <sstream>      // ostringstream
 #include <string>       // basic_string
 #include <array>        // array
 #include "json_value.hpp"
@@ -131,7 +132,8 @@ public:
                     oa.write(indent_string.c_str(), new_indent);
                     oa.write('\"');
                     oa.write(iter->first.c_str(), iter->first.size());
-                    oa.write("\": ");
+                    oa.write("\":");
+                    if (indent_step > 0) oa.write(' ');
                     dump(iter->second, indent_step, new_indent);
 
                     // not last element
@@ -153,7 +155,8 @@ public:
                 {
                     oa.write('\"');
                     oa.write(iter->first.c_str(), iter->first.size());
-                    oa.write("\": ");
+                    oa.write("\":");
+                    if (indent_step > 0) oa.write(' ');
                     dump(iter->second, indent_step, current_indent);
 
                     // not last element
@@ -297,7 +300,9 @@ public:
 
     void dump_float(number_float_t num)
     {
-        auto&& str = std::to_string(num);
+        std::ostringstream oss;
+        oss << std::setprecision(sizeof(number_float_t) == 8 ? 15 : 7) << num;
+        auto&& str = oss.str();
         oa.write(str.c_str(), str.size());
     }
 
