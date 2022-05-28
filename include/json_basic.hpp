@@ -329,11 +329,11 @@ public:
     }
 
     bool contains(const typename object_t::key_type& key)const
-    {
+    {     
         return find(key) != cend();
     }
 
-    const_iterator erase(const typename object_t::key_type& key)
+    void erase(const typename object_t::key_type& key)
     {
         if (is_object())
         {
@@ -341,29 +341,19 @@ public:
         }
     }
 
-    const_iterator erase(const_iterator iter)
+    // only for object
+    void erase(const_iterator iter)
     {
-        if (is_object())
+        if (!is_object())
         {
-            m_value.m_data.object->erase(iter);
+            throw json_type_error("erase(const_iterator) cannot be called by a non-object type");
         }
+
+        m_value.m_data.object->erase(iter.m_iter.object_iter);
     }
 
     // only for array
     void push_back(const basic_json& json)
-    {
-        emplace_back(json);
-    }
-
-    // only for array
-    void push_back(basic_json&& json)
-    {
-        emplace_back(std::move(json));
-    }
-
-    // only for array
-    template<typename... Args>
-    void emplace_back(Args&&... args)
     {
         if (is_null())
         {
@@ -372,10 +362,26 @@ public:
         
         if (!is_array())
         {
-            throw json_type_error("emplace_back() only for an array value");
+            throw json_type_error("push_back() cannot be called by a non-array type");
         }
 
-        m_value.m_data.array->emplace_back(std::forward<Args>(args)...);
+        m_value.m_data.array->emplace_back(json);
+    }
+
+    // only for array
+    void push_back(basic_json&& json)
+    {
+        if (is_null())
+        {
+            m_value = json_value<basic_json>(value_t::array);
+        }
+        
+        if (!is_array())
+        {
+            throw json_type_error("push_back() cannot be called by a non-array type");
+        }
+
+        m_value.m_data.array->emplace_back(std::move(json));
     }
 
     // only for array
@@ -383,7 +389,7 @@ public:
     {
         if (!is_array())
         {
-            throw json_type_error("pop_back() only for an array value");
+            throw json_type_error("pop_back() cannot be called by a non-array type");
         }
 
         m_value.m_data.array->pop_back();
@@ -496,17 +502,6 @@ public:
 
 
 public:
-    bool operator==(const basic_json& other)const
-    {
-        return m_value == other.m_value;
-    }
-
-    bool operator!=(const basic_json& other)const
-    {
-        return m_value != other.m_value;
-    }
-
-
     basic_json& operator[](size_type index)
     {
         if (is_null())
@@ -620,11 +615,24 @@ public:
     }
 
 
+public:
     // explicitly convert functions
     template<typename Ty>
-    operator Ty()const
+    explicit operator Ty()const
     {
         return get<Ty>();
+    }
+
+
+public:
+    friend bool operator==(const basic_json& lhs, const basic_json& rhs)
+    {
+        return lhs.m_value == rhs.m_value;
+    }
+
+    friend bool operator!=(const basic_json& lhs, const basic_json& rhs)
+    {
+        return !(lhs.m_value == rhs.m_value);
     }
 
 

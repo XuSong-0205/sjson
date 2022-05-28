@@ -12,7 +12,7 @@ int main()
     auto j7 = json::array({ 0, 1, 2, 3 });
 
     j7.push_back(4);
-    j7.emplace_back(5);
+    j7.push_back(5);
     j7.push_back(j1);
     j7.push_back(json("back"));
 
@@ -22,7 +22,7 @@ int main()
     j7.pop_back();
     std::cout << color::F_CYAN << j7 << "\n" << color::CLEAR_F;
 
-    
+
     json j8 = {
         { "c", 3.14 },
         { "obj", {
@@ -32,11 +32,20 @@ int main()
         }
     };
 
-    
+
     std::cout << j8 << "\n";
     std::cout << "j8.contains(\"obj\"): " << std::boolalpha << j8.contains("obj") << "\n";
 
+    j8["arr"] = json::array({ 0, 2, 4 });
+    j8["arr"].push_back(j8["arr"]);
+    j8["arr"].push_back({ "pi", 3.14 });
+    auto iter = j8.at("obj").find("key2");
+    j8["obj"].erase(iter);
+    std::cout << color::F_PURPLE << j8 << color::CLEAR_F << "\n";
+
     
+
+
     std::cout << color::F_GREEN << std::setw(4) << j6 << "\n" << color::CLEAR_F;
     std::cout << color::F_BLUE << j7.dump(0) << "\n" << color::CLEAR_F;
 

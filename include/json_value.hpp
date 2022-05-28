@@ -337,52 +337,52 @@ public:
 
 
 public:
-    bool operator==(const json_value& other)const
+    friend bool operator==(const json_value& lhs, const json_value& rhs)
     {
-        if (m_type == other.m_type)
+        if (lhs.m_type == rhs.m_type)
         {
-            switch (m_type)
+            switch (lhs.m_type)
             {
                 case value_t::null:
                     return true;
 
                 case value_t::object:
-                    return *m_data.object == *other.m_data.object;
+                    return *lhs.m_data.object == *rhs.m_data.object;
     
                 case value_t::array:
-                    return *m_data.array == *other.m_data.array;
+                    return *lhs.m_data.array == *rhs.m_data.array;
     
                 case value_t::string:
-                    return *m_data.string == *other.m_data.string;
+                    return *lhs.m_data.string == *rhs.m_data.string;
     
                 case value_t::number_integer:
-                    return m_data.number_integer == other.m_data.number_integer;
+                    return lhs.m_data.number_integer == rhs.m_data.number_integer;
     
                 case value_t::number_float:
-                    return m_data.number_float == other.m_data.number_float;
+                    return lhs.m_data.number_float == rhs.m_data.number_float;
     
                 case value_t::boolean:
-                    return m_data.boolean == other.m_data.boolean;
+                    return lhs.m_data.boolean == rhs.m_data.boolean;
     
                 default:
                     return false;
             }
         }
-        else if ((m_type == value_t::number_integer) && (other.m_type == value_t::number_float))
+        else if ((lhs.m_type == value_t::number_integer) && (rhs.m_type == value_t::number_float))
         {
-            return static_cast<number_float_t>(m_data.number_integer) == m_data.number_float;
+            return static_cast<number_float_t>(lhs.m_data.number_integer) == rhs.m_data.number_float;
         }
-        else if ((m_type == value_t::number_float) && (other.m_type == value_t::number_integer))
+        else if ((lhs.m_type == value_t::number_float) && (rhs.m_type == value_t::number_integer))
         {
-            return static_cast<number_float_t>(other.m_data.number_integer) == m_data.number_float;
+            return static_cast<number_float_t>(rhs.m_data.number_integer) == lhs.m_data.number_float;
         }
     
         throw json_type_error("cannot compare two different types of json");
     }
 
-    bool operator!=(const json_value& other)const
+    friend bool operator!=(const json_value& lhs, const json_value& rhs)
     {
-        return !(*this == other);
+        return !(lhs == rhs);
     }
 
 
