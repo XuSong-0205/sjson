@@ -132,6 +132,17 @@ public:
             array(init_list).swap(*this);
         }
     }
+    
+
+    template<typename Ty, typename std::enable_if<has_to_json<Ty, basic_json>::value, int>::type = 0>
+    basic_json(const Ty& val)
+    {
+        json_bind<Ty, basic_json>().to_json(*this, val);
+    }
+
+
+
+    
 
 
 public:
