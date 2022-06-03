@@ -135,7 +135,7 @@ public:
                 {
                     oa.write(indent_string.c_str(), new_indent);
                     oa.write('\"');
-                    oa.write(iter->first.c_str(), iter->first.size());
+                    dump_string(iter->first);
                     oa.write("\":");
                     if (indent_step > 0) oa.write(' ');
                     dump(iter->second, indent_step, new_indent);
@@ -158,7 +158,7 @@ public:
                 for (std::size_t i = 0; i < size; ++i, ++iter)
                 {
                     oa.write('\"');
-                    oa.write(iter->first.c_str(), iter->first.size());
+                    dump_string(iter->first);
                     oa.write("\":");
                     if (indent_step > 0) oa.write(' ');
                     dump(iter->second, indent_step, current_indent);

@@ -29,7 +29,8 @@ int main()
             { "key1", "val1" },
             { "key2", "val2" },
             }
-        }
+        },
+        { "C:\\aaa\\bbb\\ccc", "key path test" }
     };
 
 
