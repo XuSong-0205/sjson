@@ -7,6 +7,9 @@
 namespace sjson
 {
     
+namespace detail 
+{
+
 class json_exception : public std::runtime_error
 {
 public:
@@ -61,6 +64,8 @@ public:
         : json_exception(msg) { }
 };
 
+
+} // namespace detail
 
 } // namespace sjson
 

@@ -9,6 +9,9 @@
 namespace sjson
 {
 
+namespace detail
+{
+
 class primitive_iterator
 {
 private:
@@ -477,7 +480,8 @@ private:
     internal_iterator<BasicJsonType>    m_iter;
 };
 
+} // namespace detail
     
-}
+} // namespace sjson
 
 #endif  // JSON_ITERATOR_HPP

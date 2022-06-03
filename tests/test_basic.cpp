@@ -44,10 +44,19 @@ int main()
     std::cout << color::F_PURPLE << j8 << color::CLEAR_F << "\n";
 
     
+    j0.insert("j0", 0);
+    j0.insert("j00", 1);
+
+    std::cout << color::F_RED << j0 << "\n" << color::CLEAR_F;
+    std::cout << color::F_GREEN << j6 << "\n" << color::CLEAR_F;
+    std::cout << color::F_BLUE << j7 << "\n" << color::CLEAR_F;
+
+    using sjson::operator""_json;
+    auto j9 = "{\"j9\": \"test\", \"arr\": [1,3,5,7,9]}"_json;
+    std::cout << color::F_YELLOW << j9 << "\n" << color::CLEAR_F;
 
 
-    std::cout << color::F_GREEN << std::setw(4) << j6 << "\n" << color::CLEAR_F;
-    std::cout << color::F_BLUE << j7.dump(0) << "\n" << color::CLEAR_F;
+
 
     return 0;
 }

@@ -4,6 +4,7 @@
 #include <iostream>
 #include <algorithm>
 #include <iterator>
+#include <utility>
 #include <initializer_list>
 #include "json_utils.hpp"
 #include "json_value.hpp"
@@ -13,6 +14,9 @@
 #include "json_exception.hpp"
 
 namespace sjson
+{
+
+namespace detail
 {
 
 BASIC_JSON_TEMPLATE_DECLARATION
@@ -137,12 +141,8 @@ public:
     template<typename Ty, typename std::enable_if<has_to_json<Ty, basic_json>::value, int>::type = 0>
     basic_json(const Ty& val)
     {
-        json_bind<Ty, basic_json>().to_json(*this, val);
+        to_json(*this, val);
     }
-
-
-
-    
 
 
 public:
@@ -344,23 +344,73 @@ public:
         return find(key) != cend();
     }
 
-    void erase(const typename object_t::key_type& key)
+    std::pair<iterator, bool> insert(const typename object_t::value_type& obj)
     {
-        if (is_object())
+        std::pair<iterator, bool> result(end(), false);
+
+        if (is_null())
         {
-            m_value.m_data.object->erase(key);
+            m_value = json_value<basic_json>(value_t::object);
         }
+
+        if (!is_object())
+        {
+            return result;
     }
 
-    // only for object
-    void erase(const_iterator iter)
+        std::tie(result.first.m_iter.object_iter, result.second) = m_value.m_data.object->insert(obj);
+        return result;
+    }
+
+    std::pair<iterator, bool> insert(typename object_t::value_type&& obj)
+    {
+        std::pair<iterator, bool> result(end(), false);
+
+        if (is_null())
+        {
+            m_value = json_value<basic_json>(value_t::object);
+        }
+
+        if (!is_object())
+        {
+            return result;
+        }
+
+        std::tie(result.first.m_iter.object_iter, result.second) = m_value.m_data.object->insert(std::move(obj));
+        return result;
+    }
+
+    std::pair<iterator, bool> insert(const string_t& key, const basic_json& val)
+    {
+        auto obj = std::make_pair(key, val);
+        return insert(obj);
+    }
+
+    std::pair<iterator, bool> insert(string_t&& key, basic_json&& val)
+    {
+        return insert(std::make_pair(std::move(key), std::move(val)));
+    }
+
+    iterator erase(const typename object_t::key_type& key)
     {
         if (!is_object())
         {
-            throw json_type_error("erase(const_iterator) cannot be called by a non-object type");
+            return end();
         }
 
-        m_value.m_data.object->erase(iter.m_iter.object_iter);
+        return m_value.m_data.object->erase(key);
+    }
+
+    iterator erase(const_iterator iter)
+    {
+        if (!is_object())
+        {
+            return end();
+        }
+
+        iterator res(this);
+        res.m_iter.object_iter = m_value.m_data.object->erase(iter.m_iter.object_iter);
+        return res;
     }
 
     // only for array
@@ -414,17 +464,35 @@ public:
 
 
 public:
-    template<typename ValueType>
-    ValueType get()const
+    template<typename Ty, 
+        typename std::enable_if<std::is_default_constructible<Ty>::value && 
+                (std::is_convertible<Ty, basic_json>::value || has_from_json<Ty, basic_json>::value), 
+                int>::type = 0>
+    Ty get()const
     {
-        static_assert(std::is_default_constructible<ValueType>::value, 
-                        "types must be DefaultConstructible when used with get()");
-
-        ValueType value;
-        m_value.get(value);
-        return value;
+        return json_type_cast<Ty>(std::integral_constant<bool, has_from_json<Ty, basic_json>::value>());
     }
 
+
+private:
+    template<typename Ty>
+    Ty json_type_cast(std::false_type)const
+    {
+        Ty val;
+        m_value.get(val);
+        return val;
+    }
+
+    template<typename Ty>
+    Ty json_type_cast(std::true_type)const
+    {
+        Ty val;
+        from_json(*this, val);
+        return val;
+    }
+
+
+public:
     const object_t& as_object()const
     {
         if (!is_object())
@@ -628,7 +696,10 @@ public:
 
 public:
     // explicitly convert functions
-    template<typename Ty>
+    template<typename Ty, 
+        typename std::enable_if<std::is_default_constructible<Ty>::value && 
+                (std::is_convertible<Ty, basic_json>::value || has_from_json<Ty, basic_json>::value), 
+                int>::type = 0>
     explicit operator Ty()const
     {
         return get<Ty>();
@@ -722,10 +793,10 @@ private:
 };
 
 
+
+} // namespace detail
+
 } // namespace sjson
-
-
-
 
 
 #endif  // JSON_BASIC_HPP

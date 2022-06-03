@@ -10,6 +10,10 @@
 namespace sjson
 {
 
+namespace detail
+{
+
+
 //
 // input_adapter
 //
@@ -496,7 +500,7 @@ public:
                 const auto ch = read_next();
                 if (ch == '.')
                 {
-                    number_float = number_integer;
+                    number_float = static_cast<number_float_t>(number_integer);
                     number_integer = 0;
                     
                     return scan_float();
@@ -504,7 +508,7 @@ public:
 
                 if (ch == 'e' || ch == 'E')
                 {
-                    number_float = number_integer;
+                    number_float = static_cast<number_float_t>(number_integer);
                     number_integer = 0;
                     
                     return scan_exponent();
@@ -787,7 +791,8 @@ private:
 };
 
 
+} // namespace detail
     
-}
+} // namespace sjson
 
 #endif  // JSON_PARSE_HPP

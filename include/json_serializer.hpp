@@ -5,11 +5,15 @@
 #include <type_traits>  // make_unsigned
 #include <ostream>      // basic_ostream
 #include <sstream>      // ostringstream
+#include <iomanip>      // setprecision
 #include <string>       // basic_string
 #include <array>        // array
 #include "json_value.hpp"
 
 namespace sjson
+{
+
+namespace detail
 {
 
 
@@ -366,8 +370,9 @@ private:
 };
 
 
+} // namespace detail
 
-}
+} // namespace sjson
 
 
 #endif // JSON_SERIALIZER_HPP

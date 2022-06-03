@@ -10,6 +10,9 @@
 namespace sjson
 {
 
+namespace detail
+{
+
 
 enum class value_t : std::uint8_t
 {
@@ -401,6 +404,9 @@ public:
 };
 
 
+} // namespace detail
+
 } // namespace sjson
+
 
 #endif  // JSON_VALUE_HPP
